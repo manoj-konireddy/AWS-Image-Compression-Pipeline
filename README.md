@@ -1,6 +1,6 @@
 # AWS Image Compression Pipeline
 
-![Application Home Page] (screenshots/home-page.png)
+![Application Home Page](screenshots/home-page.png)
 
 ## Overview
 
@@ -30,33 +30,11 @@ https://d36njv3benvlbt.cloudfront.net/
 
 ## Architecture
 
-![Architecture Diagram](Docs/architecture.png)
+## Architecture
 
-### Architecture Flow
+![Architecture Diagram](docs/architecture.png)
 
-```text
-User
-  ↓
-CloudFront
-  ↓
-S3 Static Website Hosting
-  ↓
-API Gateway
-  ↓
-Upload Lambda
-  ↓
-Input S3 Bucket
-(manoj-image-input-2026)
-  ↓
-Compression Lambda
-  ↓
-Output S3 Bucket
-(manoj-image-output-2026)
-  ↓
-Presigned URL Download
-  ↓
-User
-```
+This architecture follows a fully serverless and event-driven design using AWS CloudFront, Amazon S3, API Gateway, and AWS Lambda for automated image compression and secure delivery.
 
 ---
 
