@@ -33,9 +33,6 @@ https://d36njv3benvlbt.cloudfront.net/
 
 ![Architecture Diagram](Docs/architecture.png)
 
----
-
-## Architecture Note 
 This architecture follows a fully serverless and event-driven design using AWS CloudFront, Amazon S3, API Gateway, and AWS Lambda for automated image compression and secure delivery.
 
 ---
