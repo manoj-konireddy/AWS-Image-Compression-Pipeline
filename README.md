@@ -31,8 +31,6 @@ https://d36njv3benvlbt.cloudfront.net/
 
 ## Architecture
 
-## Architecture
-
 ![Architecture Diagram](docs/architecture.png)
 
 ## Architecture Note 
