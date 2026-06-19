@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>AWS Image Compression Pipeline</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>AWS Image Compression Pipeline</h1>
+
+    <p class="subtitle">
+        Upload an image and compare the original with the optimized version.
+    </p>
+
+    <input type="file" id="fileInput" accept="image/*">
+
+    <br><br>
+
+    <button onclick="uploadImage()">
+        Upload & Compress
+    </button>
+
+    <div id="status"></div>
+
+    <div class="comparison">
+
+        <div class="card">
+            <h3>Original Image</h3>
+            <img id="originalPreview">
+            <p id="originalSize"></p>
+        </div>
+
+        <div class="card">
+            <h3>Compressed Image</h3>
+            <img id="compressedPreview">
+            <p id="compressedSize"></p>
+        </div>
+
+    </div>
+
+    <div id="savings"></div>
+
+    <a id="downloadBtn" target="_blank">
+        Download Optimized Image
+    </a>
+
+</div>
+
+<script>
+
+const API_URL =
+"https://ha37oionl8.execute-api.ap-south-1.amazonaws.com/upload";
+
+function bytesToKB(bytes){
+    return (bytes / 1024).toFixed(2);
+}
+
+async function uploadImage(){
+
+    const file =
+    document.getElementById("fileInput").files[0];
+
+    if(!file){
+        alert("Please select an image");
+        return;
+    }
+
+    document.getElementById("status").innerHTML =
+    "Uploading and compressing image...";
+
+    document.getElementById("originalPreview").src =
+    URL.createObjectURL(file);
+
+    const reader = new FileReader();
+
+    reader.onload = async function(){
+
+        const base64 =
+        reader.result.split(",")[1];
+
+        try{
+
+            const uploadResponse =
+            await fetch(API_URL,{
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                body:JSON.stringify({
+                    image:base64,
+                    filename:file.name
+                })
+            });
+
+            const uploadData =
+            await uploadResponse.json();
+
+            const originalSize =
+            uploadData.original_size;
+
+            document.getElementById("originalSize").innerHTML =
+            "Size: " +
+            bytesToKB(originalSize) +
+            " KB";
+
+            document.getElementById("status").innerHTML =
+            "Image uploaded successfully. Processing...";
+
+            await new Promise(resolve =>
+                setTimeout(resolve,3000)
+            );
+
+            const downloadResponse =
+            await fetch(
+                API_URL.replace(
+                    "/upload",
+                    "/download?file=resized-" + file.name
+                )
+            );
+
+            const downloadData =
+            await downloadResponse.json();
+
+            document.getElementById("compressedPreview").src =
+            downloadData.download_url;
+
+            document.getElementById("compressedSize").innerHTML =
+            "Size: " +
+            bytesToKB(downloadData.compressed_size) +
+            " KB";
+
+            const savings =
+            (
+                (
+                    originalSize -
+                    downloadData.compressed_size
+                )
+                /
+                originalSize
+            ) * 100;
+
+            document.getElementById("savings").innerHTML =
+            "Compression Savings: " +
+            savings.toFixed(2) +
+            "%";
+
+            document.getElementById("downloadBtn").href =
+            downloadData.download_url;
+
+            document.getElementById("downloadBtn").style.display =
+            "inline-block";
+
+            document.getElementById("status").innerHTML =
+            "✅ Compression Completed";
+
+        }
+        catch(error){
+
+            console.error(error);
+
+            document.getElementById("status").innerHTML =
+            "❌ Error: " + error;
+
+        }
+    };
+
+    reader.readAsDataURL(file);
+}
+
+</script>
+
+</body>
+</html>
