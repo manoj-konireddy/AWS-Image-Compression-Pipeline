@@ -1,5 +1,6 @@
 # AWS Image Compression Pipeline
 
+### Application Home Page
 ![Application Home Page](screenshots/home-page.png)
 
 ## Overview
