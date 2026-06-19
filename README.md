@@ -1,6 +1,6 @@
 # AWS Image Compression Pipeline
 
-![Application Home Page](screenshots/home-page.png)
+![Application Home Page] (screenshots/home-page.png)
 
 ## Overview
 
@@ -30,7 +30,7 @@ https://d36njv3benvlbt.cloudfront.net/
 
 ## Architecture
 
-![Architecture Diagram](docs/architecture.png)
+![Architecture Diagram](Docs/architecture.png)
 
 ### Architecture Flow
 
