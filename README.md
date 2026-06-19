@@ -31,7 +31,7 @@ https://d36njv3benvlbt.cloudfront.net/
 
 ## Architecture
 
-![Architecture Diagram](docs/architecture.png)
+![Architecture Diagram](Docs/architecture.png)
 
 ---
 
