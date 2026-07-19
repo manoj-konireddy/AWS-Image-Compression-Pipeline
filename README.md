@@ -47,19 +47,19 @@ The application successfully compresses uploaded images while maintaining visual
 
 ### Image Upload and Processing
 
-
+![Upload Success](screenshots/upload-success.png)
 
 ### Compression Result and Download
 
-
+![Compression Result](screenshots/compression-result.png)
 
 ### Sample Compression Result
 
 | Metric                | Value             |
 | --------------------- | ----------------- |
-| Original Image Size   | 331 KB            |
-| Compressed Image Size | 128 KB            |
-| Storage Reduction     | 61.20%            |
+| Original Image Size   | 1351.23 KB        |
+| Compressed Image Size | 1132.68 KB        |
+| Storage Reduction     | 16.17%            |
 | Download Method       | AWS Presigned URL |
 | Deployment            | CloudFront + S3   |
 
