@@ -1,98 +1,85 @@
+import json
 import boto3
-from PIL import Image, ImageOps
-import os
-import urllib.parse
+import base64
 
-s3 = boto3.client("s3")
+s3 = boto3.client('s3')
 
-OUTPUT_BUCKET = "manoj-image-output-2026"
-
+INPUT_BUCKET = 'manoj-image-input-2026'
+OUTPUT_BUCKET = 'manoj-image-output-2026'
 
 def lambda_handler(event, context):
 
-    bucket = event["Records"][0]["s3"]["bucket"]["name"]
-    key = urllib.parse.unquote_plus(
-        event["Records"][0]["s3"]["object"]["key"]
-    )
+    method = event.get("requestContext", {}) \
+                  .get("http", {}) \
+                  .get("method", "")
 
-    filename = os.path.basename(key)
+    try:
 
-    download_path = f"/tmp/{filename}"
-    upload_path = f"/tmp/resized-{filename}"
+        # DOWNLOAD REQUEST
+        if method == "GET":
 
-    # Download image
-    s3.download_file(bucket, key, download_path)
+            filename = event["queryStringParameters"]["file"]
 
-    image = Image.open(download_path)
+            response = s3.head_object(
+                Bucket=OUTPUT_BUCKET,
+                Key=filename
+            )
 
-    # Correct orientation using EXIF
-    image = ImageOps.exif_transpose(image)
+            compressed_size = response["ContentLength"]
 
-    # Resize only if image is huge
-    MAX_SIZE = (1920, 1920)
-    image.thumbnail(MAX_SIZE)
+            url = s3.generate_presigned_url(
+                "get_object",
+                Params={
+                    "Bucket": OUTPUT_BUCKET,
+                    "Key": filename
+                },
+                ExpiresIn=3600
+            )
 
-    image_format = image.format
+            return {
+                "statusCode": 200,
+                "headers": {
+                    "Access-Control-Allow-Origin": "*"
+                },
+                "body": json.dumps({
+                    "download_url": url,
+                    "compressed_size": compressed_size
+                })
+            }
 
-    save_kwargs = {}
+        # UPLOAD REQUEST
+        body = json.loads(event["body"])
 
-    if image_format in ["JPEG", "JPG"]:
+        image_data = base64.b64decode(body["image"])
 
-        if image.mode != "RGB":
-            image = image.convert("RGB")
+        filename = body["filename"]
 
-        save_kwargs = {
-            "format": "JPEG",
-            "quality": 70,
-            "optimize": True,
-            "progressive": True
-        }
-
-    elif image_format == "PNG":
-
-        save_kwargs = {
-            "format": "PNG",
-            "optimize": True,
-            "compress_level": 9
-        }
-
-    elif image_format == "WEBP":
-
-        save_kwargs = {
-            "format": "WEBP",
-            "quality": 70,
-            "method": 6
-        }
-
-    elif image_format == "GIF":
-
-        save_kwargs = {
-            "format": "GIF",
-            "optimize": True
-        }
-
-    else:
-        image.save(upload_path)
-        s3.upload_file(
-            upload_path,
-            OUTPUT_BUCKET,
-            f"resized-{filename}"
+        s3.put_object(
+            Bucket=INPUT_BUCKET,
+            Key=filename,
+            Body=image_data,
+            ContentType="image/jpeg"
         )
 
         return {
             "statusCode": 200,
-            "body": "Uploaded (unsupported compression format)"
+            "headers": {
+                "Access-Control-Allow-Origin": "*"
+            },
+            "body": json.dumps({
+                "filename": filename,
+                "original_size": len(image_data)
+            })
         }
 
-    image.save(upload_path, **save_kwargs)
+    except Exception as e:
 
-    s3.upload_file(
-        upload_path,
-        OUTPUT_BUCKET,
-        f"resized-{filename}"
-    )
-
-    return {
-        "statusCode": 200,
-        "body": "Image compressed successfully"
-    }
+        return {
+            "statusCode": 500,
+            "headers": {
+                "Access-Control-Allow-Origin": "*"
+            },
+            "body": json.dumps({
+                "error": str(e)
+            })
+        }
