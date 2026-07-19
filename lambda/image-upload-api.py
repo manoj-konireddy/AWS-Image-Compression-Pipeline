@@ -1,85 +1,98 @@
-import json
 import boto3
-import base64
+from PIL import Image, ImageOps
+import os
+import urllib.parse
 
-s3 = boto3.client('s3')
+s3 = boto3.client("s3")
 
-INPUT_BUCKET = 'manoj-image-input-2026'
-OUTPUT_BUCKET = 'manoj-image-output-2026'
+OUTPUT_BUCKET = "manoj-image-output-2026"
+
 
 def lambda_handler(event, context):
 
-    method = event.get("requestContext", {}) \
-                  .get("http", {}) \
-                  .get("method", "")
+    bucket = event["Records"][0]["s3"]["bucket"]["name"]
+    key = urllib.parse.unquote_plus(
+        event["Records"][0]["s3"]["object"]["key"]
+    )
 
-    try:
+    filename = os.path.basename(key)
 
-        # DOWNLOAD REQUEST
-        if method == "GET":
+    download_path = f"/tmp/{filename}"
+    upload_path = f"/tmp/compressed-{filename}"
 
-            filename = event["queryStringParameters"]["file"]
+    # Download image
+    s3.download_file(bucket, key, download_path)
 
-            response = s3.head_object(
-                Bucket=OUTPUT_BUCKET,
-                Key=filename
-            )
+    image = Image.open(download_path)
 
-            compressed_size = response["ContentLength"]
+    # Correct orientation using EXIF
+    image = ImageOps.exif_transpose(image)
 
-            url = s3.generate_presigned_url(
-                "get_object",
-                Params={
-                    "Bucket": OUTPUT_BUCKET,
-                    "Key": filename
-                },
-                ExpiresIn=3600
-            )
+    # Resize only if image is huge
+    MAX_SIZE = (1920, 1920)
+    image.thumbnail(MAX_SIZE)
 
-            return {
-                "statusCode": 200,
-                "headers": {
-                    "Access-Control-Allow-Origin": "*"
-                },
-                "body": json.dumps({
-                    "download_url": url,
-                    "compressed_size": compressed_size
-                })
-            }
+    image_format = image.format
 
-        # UPLOAD REQUEST
-        body = json.loads(event["body"])
+    save_kwargs = {}
 
-        image_data = base64.b64decode(body["image"])
+    if image_format in ["JPEG", "JPG"]:
 
-        filename = body["filename"]
+        if image.mode != "RGB":
+            image = image.convert("RGB")
 
-        s3.put_object(
-            Bucket=INPUT_BUCKET,
-            Key=filename,
-            Body=image_data,
-            ContentType="image/jpeg"
+        save_kwargs = {
+            "format": "JPEG",
+            "quality": 70,
+            "optimize": True,
+            "progressive": True
+        }
+
+    elif image_format == "PNG":
+
+        save_kwargs = {
+            "format": "PNG",
+            "optimize": True,
+            "compress_level": 9
+        }
+
+    elif image_format == "WEBP":
+
+        save_kwargs = {
+            "format": "WEBP",
+            "quality": 70,
+            "method": 6
+        }
+
+    elif image_format == "GIF":
+
+        save_kwargs = {
+            "format": "GIF",
+            "optimize": True
+        }
+
+    else:
+        image.save(upload_path)
+        s3.upload_file(
+            upload_path,
+            OUTPUT_BUCKET,
+            f"compressed-{filename}"
         )
 
         return {
             "statusCode": 200,
-            "headers": {
-                "Access-Control-Allow-Origin": "*"
-            },
-            "body": json.dumps({
-                "filename": filename,
-                "original_size": len(image_data)
-            })
+            "body": "Uploaded (unsupported compression format)"
         }
 
-    except Exception as e:
+    image.save(upload_path, **save_kwargs)
 
-        return {
-            "statusCode": 500,
-            "headers": {
-                "Access-Control-Allow-Origin": "*"
-            },
-            "body": json.dumps({
-                "error": str(e)
-            })
-        }
+    s3.upload_file(
+        upload_path,
+        OUTPUT_BUCKET,
+        f"compressed-{filename}"
+    )
+
+    return {
+        "statusCode": 200,
+        "body": "Image compressed successfully"
+    }
