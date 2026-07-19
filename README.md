@@ -47,11 +47,11 @@ The application successfully compresses uploaded images while maintaining visual
 
 ### Image Upload and Processing
 
-![Upload Success](screenshots/upload-success.png)
+
 
 ### Compression Result and Download
 
-![Compression Result](screenshots/compression-result.png)
+
 
 ### Sample Compression Result
 
