@@ -18,7 +18,7 @@ def lambda_handler(event, context):
     filename = os.path.basename(key)
 
     download_path = f"/tmp/{filename}"
-    upload_path = f"/tmp/compressed-{filename}"
+    upload_path = f"/tmp/resized-{filename}"
 
     # Download image
     s3.download_file(bucket, key, download_path)
@@ -76,7 +76,7 @@ def lambda_handler(event, context):
         s3.upload_file(
             upload_path,
             OUTPUT_BUCKET,
-            f"compressed-{filename}"
+            f"resized-{filename}"
         )
 
         return {
@@ -89,7 +89,7 @@ def lambda_handler(event, context):
     s3.upload_file(
         upload_path,
         OUTPUT_BUCKET,
-        f"compressed-{filename}"
+        f"resized-{filename}"
     )
 
     return {
