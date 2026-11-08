@@ -11,12 +11,6 @@ The project leverages AWS Lambda, Amazon S3, API Gateway, and CloudFront to prov
 
 ---
 
-## Live Demo
-
-https://d36njv3benvlbt.cloudfront.net/
-
----
-
 ## Project Highlights
 
 * Built a fully serverless image compression solution on AWS.
